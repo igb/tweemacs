@@ -4,6 +4,7 @@
 (defun tweet ()
   "Send a tweet!"
   (interactive)
+  (hmac-sha1 "foo" "bar")
   (if (<= (buffer-size) 140)
       (send-tweet 
        (buffer-substring-no-properties 1 (buffer-size))
@@ -60,12 +61,53 @@
 (defun get-signing-key(consumer-secret oauth-token-secret)
   (concat (escape-uri consumer-secret) "&"  (escape-uri oauth-token-secret)))
 
+(defun zipxor (a b acc)
+  (if (= (length a) 0)
+      acc
+    (setq new-acc (append acc (cons (logxor (car a) (car b)) '())))
+    (zipxor (cdr a) (cdr b) new-acc)))
 
- (defun sign (parameters url consumer-secret oauth-token-secret http-method)
-   (setq parameter-string  (create-parameter-string parameters))
-  (setq signature-base-string (create-signature-base-string(parameter-string  url  http-method))))
-;  signing-key= get-signing-key(consumer-secret, oauth-token-secret)
-;      base64-encode-to-string(crypto-hmac(sha, signing-key, signature-base-string))
+
+(defun bytepad(origin width padbyte)
+  (while (< (length origin) width)
+    (setq origin (concat origin (byte-to-string padbyte))))
+  origin)
+
+
+(defun hmac-sha1 (key message)
+
+  (setq block-size 64) 
+  (setq output-size 20)
+
+  
+  
+  
+  (if (> (length key) block-size)
+      (setq key (secure-hash 'sha1 key nil nil "t")))
+
+  (if (< (length key) block-size)
+      (setq key (bytepad key block-size #x00)))
+
+
+  
+  
+  (setq o-key-pad  (zipxor (string-to-list key) (string-to-list (bytepad "" block-size #x5c)) '()))
+  
+  (setq i-key-pad (zipxor (string-to-list key) (string-to-list (bytepad "" block-size #x36)) '()))
+  
+  
+  
+  (secure-hash 'sha1
+	       (concat "" o-key-pad
+		       (secure-hash 'sha1
+				    (concat "" i-key-pad  message) nil nil "t"))))
+
+
+(defun sign (parameters url consumer-secret oauth-token-secret http-method)
+  (setq parameter-string  (create-parameter-string parameters))
+  (setq signature-base-string (create-signature-base-string(parameter-string  url  http-method)))
+  (setq signing-key (get-signing-key consumer-secret  oauth-token-secret))
+  (base64-encode-to-string(hmac-sha1(signing-key  signature-base-string))))
 
 
 
@@ -113,4 +155,17 @@
     (get-signing-key "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw" "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE")
     "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw&LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE")))
 
+(ert-deftest emcaw-test-hmac-sha1-zero-length-message ()
+  "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
+  (should
+   (equal
+    (hmac-sha1 "key" "")
+    "f42bb0eeb018ebbd4597ae7213711ec60760843f" ))) 
 
+
+(ert-deftest emcaw-test-hmac-sha1 ()
+  "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
+  (should
+   (equal
+    (hmac-sha1 "bar" "foo")
+    "85d155c55ed286a300bd1cf124de08d87e914f3a" )))
