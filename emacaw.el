@@ -84,7 +84,7 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
 
 
 (defun hmac-sha1 (key message)
-
+  "Generate a HMAC-SHA1 message authentication code for a given `key' and `message'. Returns a hexadecimal-encoded string of the MAC."
   (setq block-size 64) 
   (setq output-size 20)
 
@@ -109,9 +109,9 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
 
 (defun sign (parameters url consumer-secret oauth-token-secret http-method)
   (setq parameter-string  (create-parameter-string parameters))
-  (setq signature-base-string (create-signature-base-string(parameter-string  url  http-method)))
+  (setq signature-base-string (create-signature-base-string parameter-string  url  http-method))
   (setq signing-key (get-signing-key consumer-secret  oauth-token-secret))
-  (hmac-sha1(signing-key signature-base-string)))
+  (hmac-sha1 signing-key signature-base-string))
 
 
 
@@ -196,3 +196,13 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
     (hmac-sha1 "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33MGJlZWM3YjVlYTNmMGZkYmM5NWQwZGQ0N2YzYzViYzI3NWRhOGEzMw==" "The quick brown fox jumps over the lazy dog")
     "e4db689e83caef6c1d3520aa4a1eaf4b83e54f89" )))
 
+
+(ert-deftest emacaw-test-sign ()
+  "Tests a full sign of request components."
+  (should
+   (equal
+    (sign (get-test-parameters) "https://api.twitter.com/1/statuses/update.json"  "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw" "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE" "post")
+    "b679c0af18f4e9c587ab8e200acd4e48a93f8cb6")))
+
+
+   
