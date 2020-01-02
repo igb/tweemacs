@@ -159,14 +159,14 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
   ("oauth_token" . "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb")
   ("oauth_version" . "1.0")))
 
-(ert-deftest emacaw-test-escape-uri ()
+(ert-deftest tweemacs-test-escape-uri ()
   "Tests the conversion of a string to a URL encoded string."
   (should
    (equal
     (escape-uri "Hello Ladies + Gentlemen, a signed OAuth request!")
     "Hello%20Ladies%20%2B%20Gentlemen%2C%20a%20signed%20OAuth%20request%21")))
 	
-(ert-deftest emacaw-test-create-parameter-string ()
+(ert-deftest tweemacs-test-create-parameter-string ()
   "Tests the creation of a paramter string from an alist of parameters"
   (should
    (equal
@@ -174,7 +174,7 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
     "include_entities=true&oauth_consumer_key=xvz1evFS4wEEPTGEFPHBog&oauth_nonce=kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1318622958&oauth_token=370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb&oauth_version=1.0&status=Hello%20Ladies%20%2B%20Gentlemen%2C%20a%20signed%20OAuth%20request%21")))
 
 
-(ert-deftest emacaw-test-create-signature-base ()
+(ert-deftest tweemacs-test-create-signature-base ()
   "Tests the composition of the signature base string for OAuth."
   (should
    (equal
@@ -182,14 +182,14 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
     "POST&https%3A%2F%2Fapi.twitter.com%2F1%2Fstatuses%2Fupdate.json&include_entities%3Dtrue%26oauth_consumer_key%3Dxvz1evFS4wEEPTGEFPHBog%26oauth_nonce%3DkYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1318622958%26oauth_token%3D370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb%26oauth_version%3D1.0%26status%3DHello%2520Ladies%2520%252B%2520Gentlemen%252C%2520a%2520signed%2520OAuth%2520request%2521")))
 
 
-(ert-deftest emacaw-test-get-signing-key ()
+(ert-deftest tweemacs-test-get-signing-key ()
   "Tests the concatenation and creation of the signing key from it's constotuent parts."
   (should
    (equal
     (get-signing-key "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw" "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE")
     "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw&LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE")))
 
-(ert-deftest emcaw-test-hmac-sha1-zero-length-message ()
+(ert-deftest tweemacs-test-hmac-sha1-zero-length-message ()
   "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
   (should
    (equal
@@ -197,21 +197,21 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
     "f42bb0eeb018ebbd4597ae7213711ec60760843f" ))) 
 
 
-(ert-deftest emcaw-test-hmac-sha1-simple-key-message-001()
+(ert-deftest tweemacs-test-hmac-sha1-simple-key-message-001()
   "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
   (should
    (equal
     (hmac-sha1 "bar" "foo")
     "85d155c55ed286a300bd1cf124de08d87e914f3a" )))
 
-(ert-deftest emcaw-test-hmac-sha1-simple-key-message-002 ()
+(ert-deftest tweemacs-test-hmac-sha1-simple-key-message-002 ()
   "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
   (should
    (equal
     (hmac-sha1 "key" "The quick brown fox jumps over the lazy dog")
     "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9" )))
 
-(ert-deftest emcaw-test-hmac-sha1-message-larger-than-block-size ()
+(ert-deftest tweemacs-test-hmac-sha1-message-larger-than-block-size ()
   "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
   (should
    (equal
@@ -219,7 +219,7 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
     "ae46438aada90b8d2b35ad2a7344925805457621" )))
 
 
-(ert-deftest emcaw-test-hmac-sha1-key-larger-than-block-size ()
+(ert-deftest tweemacs-test-hmac-sha1-key-larger-than-block-size ()
   "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
   (should
    (equal
@@ -227,7 +227,7 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
     "e4db689e83caef6c1d3520aa4a1eaf4b83e54f89" )))
 
 
-(ert-deftest emacaw-test-sign ()
+(ert-deftest tweemacs-test-sign ()
   "Tests a full sign of request components."
   (should
    (equal
@@ -235,14 +235,14 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
     "tnnArxj06cWHq44gCs1OSKk/jLY=")))
 
 
-(ert-deftest emacaw-test-create-oauth-header-string()
+(ert-deftest tweemacs-test-create-oauth-header-string()
   "Tests the construction of the OAuth HTTP Header value string syntax."
   (should
    (equal
     (create-oauth-header-string '(("foo" . "bar") ("bing" . "bat")))
     "OAuth bing=\"bat\", foo=\"bar\"")))
 
-(ert-deftest emacaw-test-create-oauth-header ()
+(ert-deftest tweemacs-test-create-oauth-header ()
   "Tests the construction and signing of the OAuth HTTP Header value."
   (setq request-parameters '(("include_entities" . "true")
 			     ("status" . "Hello Ladies + Gentlemen, a signed OAuth request!")))
