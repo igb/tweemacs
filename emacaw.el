@@ -62,6 +62,7 @@
   (concat (escape-uri consumer-secret) "&"  (escape-uri oauth-token-secret)))
 
 (defun zipxor (a b acc)
+  "Apply `logxor' to each element of list a and list b `(logxor a b) returning a list of the xor'd values."
   (if (= (length a) 0)
       acc
     (setq new-acc (append acc (cons (logxor (car a) (car b)) '())))
@@ -69,9 +70,17 @@
 
 
 (defun bytepad(origin width padbyte)
+  "Pad the origin string to the width parameter using the supplied padbyte. 
+For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'"
   (while (< (length origin) width)
     (setq origin (concat origin (byte-to-string padbyte))))
   origin)
+
+
+
+(defun coerce (putative-binary)
+  "These should be unecessary and seems like a no-op, but fuck Elisp."
+  (base64-decode-string (base64-encode-string putative-binary)))
 
 
 (defun hmac-sha1 (key message)
@@ -80,34 +89,29 @@
   (setq output-size 20)
 
   
-  
-  
   (if (> (length key) block-size)
-      (setq key (secure-hash 'sha1 key nil nil "t")))
-
+      (setq key (concat "" (secure-hash 'sha1 key nil nil "t"))))
+  
   (if (< (length key) block-size)
       (setq key (bytepad key block-size #x00)))
-
 
   
   
   (setq o-key-pad  (zipxor (string-to-list key) (string-to-list (bytepad "" block-size #x5c)) '()))
   
   (setq i-key-pad (zipxor (string-to-list key) (string-to-list (bytepad "" block-size #x36)) '()))
-  
-  
+
   
   (secure-hash 'sha1
-	       (concat "" o-key-pad
-		       (secure-hash 'sha1
-				    (concat "" i-key-pad  message) nil nil "t"))))
-
+	       (coerce (concat "" o-key-pad
+			       (secure-hash 'sha1
+					    (coerce (concat "" i-key-pad  message)) nil nil "t")))))
 
 (defun sign (parameters url consumer-secret oauth-token-secret http-method)
   (setq parameter-string  (create-parameter-string parameters))
   (setq signature-base-string (create-signature-base-string(parameter-string  url  http-method)))
   (setq signing-key (get-signing-key consumer-secret  oauth-token-secret))
-  (base64-encode-to-string(hmac-sha1(signing-key  signature-base-string))))
+  (hmac-sha1(signing-key signature-base-string)))
 
 
 
@@ -163,9 +167,32 @@
     "f42bb0eeb018ebbd4597ae7213711ec60760843f" ))) 
 
 
-(ert-deftest emcaw-test-hmac-sha1 ()
+(ert-deftest emcaw-test-hmac-sha1-simple-key-message-001()
   "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
   (should
    (equal
     (hmac-sha1 "bar" "foo")
     "85d155c55ed286a300bd1cf124de08d87e914f3a" )))
+
+(ert-deftest emcaw-test-hmac-sha1-simple-key-message-002 ()
+  "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
+  (should
+   (equal
+    (hmac-sha1 "key" "The quick brown fox jumps over the lazy dog")
+    "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9" )))
+
+(ert-deftest emcaw-test-hmac-sha1-message-larger-than-block-size ()
+  "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
+  (should
+   (equal
+    (hmac-sha1 "key" "In cryptography, an HMAC (sometimes expanded as either keyed-hash message authentication code or hash-based message authentication code) is a specific type of message authentication code (MAC) involving a cryptographic hash function and a secret cryptographic key. It may be used to simultaneously verify both the data integrity and the authenticity of a message, as with any MAC. Any cryptographic hash function, such as SHA-256 or SHA-3, may be used in the calculation of an HMAC; the resulting MAC algorithm is termed HMAC-X, where X is the hash function used (e.g. HMAC-SHA256 or HMAC-SHA3). The cryptographic strength of the HMAC depends upon the cryptographic strength of the underlying hash function, the size of its hash output, and the size and quality of the key.")
+    "ae46438aada90b8d2b35ad2a7344925805457621" )))
+
+
+(ert-deftest emcaw-test-hmac-sha1-key-larger-than-block-size ()
+  "Tests the bespoke HMAC-SHA1 inadvisably implemented in this extension,"
+  (should
+   (equal
+    (hmac-sha1 "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33MGJlZWM3YjVlYTNmMGZkYmM5NWQwZGQ0N2YzYzViYzI3NWRhOGEzMw==" "The quick brown fox jumps over the lazy dog")
+    "e4db689e83caef6c1d3520aa4a1eaf4b83e54f89" )))
+
