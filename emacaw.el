@@ -39,13 +39,16 @@
      )  parameters))
 
 
-
+(defun sort-parameters (parameters)
+  "Sort an alist by the first element in each alist."
+  (sort encoded-parameters
+	      (lambda (a b)
+		(string< (car a) (car b)))))
+  
 (defun create-parameter-string (parameters)
   (setq encoded-parameters  (encode-parameters parameters))
   (setq sorted-encoded-parameters
-	(sort encoded-parameters
-	      (lambda (a b)
-		(string< (car a) (car b)))))
+	(sort-parameters encoded-parameters))
 
   (mapconcat
    (lambda (y)
@@ -83,8 +86,8 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
   (base64-decode-string (base64-encode-string putative-binary)))
 
 
-(defun hmac-sha1 (key message)
-  "Generate a HMAC-SHA1 message authentication code for a given `key' and `message'. Returns a hexadecimal-encoded string of the MAC."
+(defun hmac-sha1 (key message &optional binary)
+  "Generate a HMAC-SHA1 message authentication code for a given `key' and `message'. By default, it returns a hexadecimal-encoded string of the MAC. If the optional `binary' paramater is not `nil' then the function will return the raw binary-encoded bytes."
   (setq block-size 64) 
   (setq output-size 20)
 
@@ -105,16 +108,43 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
   (secure-hash 'sha1
 	       (coerce (concat "" o-key-pad
 			       (secure-hash 'sha1
-					    (coerce (concat "" i-key-pad  message)) nil nil "t")))))
+					    (coerce (concat "" i-key-pad  message)) nil nil "t"))) nil nil binary))
 
 (defun sign (parameters url consumer-secret oauth-token-secret http-method)
   (setq parameter-string  (create-parameter-string parameters))
   (setq signature-base-string (create-signature-base-string parameter-string  url  http-method))
   (setq signing-key (get-signing-key consumer-secret  oauth-token-secret))
-  (hmac-sha1 signing-key signature-base-string))
+  (base64-encode-string (hmac-sha1 signing-key signature-base-string 't)))
 
 
+(defun create-oauth-header-string (parameters)
+  "Encode and concatenate the OAuth parameters into the OAuth headers string"
+  (setq encoded-parameters (encode-parameters parameters))
+  (setq sorted-encoded-parameters (sort-parameters encoded-parameters))
+  (concat "OAuth " (mapconcat
+   (lambda (y)
+     (concat (car y) "=\"" (cdr y) "\"")
+     ) sorted-encoded-parameters  ", ")))
 
+
+(defun create-oauth-header (request-parameters url consumer-key  consumer-secret oauth-token oauth-token-secret oauth-nonce oauth-timestamp http-method)
+
+       (setq oauth-signature-method "HMAC-SHA1")
+       (setq oauth-version "1.0")
+
+
+       (setq oauth-parameters `(("oauth_consumer_key" . ,consumer-key)
+			    ("oauth_nonce" . ,oauth-nonce)
+			    ("oauth_signature_method" . ,oauth-signature-method)
+			    ("oauth_timestamp" . ,oauth-timestamp)
+			    ("oauth_token" . ,oauth-token)
+			    ("oauth_version" . ,oauth-version)))
+       
+       (setq signing-parameters (append oauth-parameters request-parameters))
+       (setq oauth-signature (sign signing-parameters url consumer-secret oauth-token-secret http-method))
+       (setq signed-oauth-parameters (append oauth-parameters `(("oauth_signature" .  ,oauth-signature))))
+       (create-oauth-header-string signed-oauth-parameters))
+       
 
 ;; UNIT TESTS
 (require 'ert)
@@ -202,7 +232,33 @@ For example `(bytepad \"foo\" 10 #x42)' would return the string `\"fooBBBBBBB\"'
   (should
    (equal
     (sign (get-test-parameters) "https://api.twitter.com/1/statuses/update.json"  "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw" "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE" "post")
-    "b679c0af18f4e9c587ab8e200acd4e48a93f8cb6")))
+    "tnnArxj06cWHq44gCs1OSKk/jLY=")))
 
 
-   
+(ert-deftest emacaw-test-create-oauth-header-string()
+  "Tests the construction of the OAuth HTTP Header value string syntax."
+  (should
+   (equal
+    (create-oauth-header-string '(("foo" . "bar") ("bing" . "bat")))
+    "OAuth bing=\"bat\", foo=\"bar\"")))
+
+(ert-deftest emacaw-test-create-oauth-header ()
+  "Tests the construction and signing of the OAuth HTTP Header value."
+  (setq request-parameters '(("include_entities" . "true")
+			     ("status" . "Hello Ladies + Gentlemen, a signed OAuth request!")))
+  (setq url  "https://api.twitter.com/1/statuses/update.json")
+  (setq consumer-key  "xvz1evFS4wEEPTGEFPHBog")
+  (setq consumer-secret "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw")
+  (setq oauth-token "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb")
+  (setq oauth-token-secret "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE")
+  (setq oauth-nonce "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg")
+  (setq oauth-timestamp  "1318622958")
+  (setq http-method "Post")
+  (setq oauth-header  (create-oauth-header request-parameters url consumer-key consumer-secret oauth-token oauth-token-secret oauth-nonce oauth-timestamp http-method))
+  (should
+   (equal
+    oauth-header "OAuth oauth_consumer_key=\"xvz1evFS4wEEPTGEFPHBog\", oauth_nonce=\"kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg\", oauth_signature=\"tnnArxj06cWHq44gCs1OSKk%2FjLY%3D\", oauth_signature_method=\"HMAC-SHA1\", oauth_timestamp=\"1318622958\", oauth_token=\"370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb\", oauth_version=\"1.0\"")))
+      
+
+
+  
