@@ -1,13 +1,22 @@
 
 (size-indication-mode t)
 
+
+(defun read-creds ()
+    "Read auth tokens from local file"
+    (with-temp-buffer
+      (insert-file-contents "~/.tweemacs")
+      (setq raw-creds (split-string (buffer-string) "\n" t))
+      (setq cred-nvps (mapcar (lambda (x) (split-string x "=")) raw-creds))
+      (mapcar (lambda (x) (set (intern (car x)) (car (cdr x)))) cred-nvps)))
+
 (defun tweet ()
   "Send a tweet!"
   (interactive)
   (hmac-sha1 "foo" "bar")
   (if (<= (buffer-size) 140)
       (send-tweet 
-       (buffer-substring-no-properties 1 (buffer-size))
+       (buffer-substring-no-properties 1 (+ (buffer-size) 0))
        )
     (print "MORE THAN 140 CHARS!"))
    )
@@ -15,13 +24,40 @@
 (defun keep-output (process output)
   (print output))
 
+
+(defun oauth-timestamp ()
+  "Returns an OAuth timestamp string"
+  (number-to-string (floor (time-to-seconds))))
+
+(defun oauth-nonce ()
+  "Returns an OAuth nonce string"
+  (base64-encode-string (number-to-string  (time-to-seconds))))
+
+
 (defun send-tweet (tweet-body)
-  (setq conn (open-network-stream "tweet" nil  "127.0.0.1" 8000))
-  (set-process-filter conn 'keep-output)
-  (process-send-string conn "GET /library.csv\n\n")
+
+  (read-creds)
+  
+  (setq escaped-tweet (escape-uri tweet-body))
+  (setq status (concat "status=" escaped-tweet))
 
  
-  )
+
+  (setq headers (concat "Accept: */*\r\n"
+			"Host: api.twitter.com\r\n" 
+			"Content-Type: application/x-www-form-urlencoded\r\n"
+			"Authorization: "
+			(create-oauth-header `(("status" . ,tweet-body)) "https://api.twitter.com/1.1/statuses/update.json" API_KEY API_SECRET ACCESS_TOKEN ACCESS_TOKEN_SECRET (oauth-nonce) (oauth-timestamp) "post") "\r\n" "Content-Length: " (number-to-string (length status))))
+	      
+  (print headers)
+  (setq conn (open-network-stream "tweet" nil  "api.twitter.com" 443  :type 'tls))
+  (set-process-filter conn 'keep-output)
+  (setq body (concat "POST /1.1/statuses/update.json HTTP/1.1\r\n" headers "\r\n\r\n" status))
+ 
+  (setq response (process-send-string conn body))
+  (print response)
+  (delete-process conn)
+	)
 
 
 (defun escape-uri (x)
