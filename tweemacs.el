@@ -16,13 +16,15 @@
   (hmac-sha1 "foo" "bar")
   (if (<= (buffer-size) 140)
       (send-tweet 
-       (buffer-substring-no-properties 1 (+ (buffer-size) 0))
+       (buffer-substring-no-properties (point-min) (point-max))
        )
     (print "MORE THAN 140 CHARS!"))
    )
   
 (defun keep-output (process output)
-  (print output))
+  (setq lines (split-string output "\r\n" t))
+  (pront "HI")
+  (print (car lines)))
 
 
 (defun oauth-timestamp ()
@@ -35,7 +37,7 @@
 
 
 (defun send-tweet (tweet-body)
-
+  (print tweet-body)
   (read-creds)
   
   (setq escaped-tweet (escape-uri tweet-body))
