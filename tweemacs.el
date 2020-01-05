@@ -13,7 +13,7 @@
 (defun tweet ()
   "Send a tweet!"
   (interactive)
-  (hmac-sha1 "foo" "bar")
+
   (if (<= (buffer-size) 140)
       (send-tweet 
        (buffer-substring-no-properties (point-min) (point-max))
@@ -22,13 +22,30 @@
    )
   
 (defun keep-output (process output)
+  "Manage and process output anc check status of Tweet action."
+  (sleep-for 3) ;; async is hard 
   (setq lines (split-string output "\r\n" t))
-  (pront "HI")
-  (print (car lines)))
+  (if (string-prefix-p "HTTP/1.1 200 OK" (car lines))
+      (message "Tweeted!")
+    (handle-error lines))
+   
+  (delete-process conn))
+
+
+(defun handle-error (lines)
+  "Handle error or non-200 condition!"
+  (mapcar (lambda (x)
+	    
+	    (if (string-prefix-p "{\"errors\":" x)
+		(message (concat "ERROR: " (car (cdr (reverse (split-string x  "[\"]"))))))
+	      )
+	    )
+	  lines)
+   )
 
 
 (defun oauth-timestamp ()
-  "Returns an OAuth timestamp string"
+  "Returns an OAuth timestamp string: seconds from the epoch"
   (number-to-string (floor (time-to-seconds))))
 
 (defun oauth-nonce ()
@@ -37,7 +54,7 @@
 
 
 (defun send-tweet (tweet-body)
-  (print tweet-body)
+  
   (read-creds)
   
   (setq escaped-tweet (escape-uri tweet-body))
@@ -49,16 +66,15 @@
 			"Host: api.twitter.com\r\n" 
 			"Content-Type: application/x-www-form-urlencoded\r\n"
 			"Authorization: "
-			(create-oauth-header `(("status" . ,tweet-body)) "https://api.twitter.com/1.1/statuses/update.json" API_KEY API_SECRET ACCESS_TOKEN ACCESS_TOKEN_SECRET (oauth-nonce) (oauth-timestamp) "post") "\r\n" "Content-Length: " (number-to-string (length status))))
+			(create-oauth-header `(("status" . ,tweet-body)) "https://api.twitter.com/1.1/statuses/update.json"  API_KEY API_SECRET ACCESS_TOKEN ACCESS_TOKEN_SECRET (oauth-nonce) (oauth-timestamp) "post") "\r\n" "Content-Length: " (number-to-string (length status))))
 	      
-  (print headers)
+  
   (setq conn (open-network-stream "tweet" nil  "api.twitter.com" 443  :type 'tls))
   (set-process-filter conn 'keep-output)
   (setq body (concat "POST /1.1/statuses/update.json HTTP/1.1\r\n" headers "\r\n\r\n" status))
  
-  (setq response (process-send-string conn body))
-  (print response)
-  (delete-process conn)
+  (process-send-string conn body)
+
 	)
 
 
