@@ -19,16 +19,17 @@ touch ~/.emacs; echo  '(load "/path/of/local/directory/where/file/was/saved/into
 ```
 
 
-### Configuring Twitter Credentials
+3. Configure Twitter credentials:
+
 The Tweemacs extension is going to need credentials in order to post Tweets as you on Twitter. To get these credentials, you will need to create an app and then generate credentials that Tweemacs will use to authN and authZ with Twitter when sending Tweets.
 
-To get started, create a developer account at [https://developer.twitter.com](https://developer.twitter.com).
+a. To get started, create a developer account at [https://developer.twitter.com](https://developer.twitter.com).
 
-Once your Twitter developer account has been created, log in to the developer site and go into *Apps*. Then click on the *Create App* button.
+b. Once your Twitter developer account has been created, log in to the developer site and go into *Apps*. Then click on the *Create App* button.
 
-After you have created your app got to the *Keys and Tokens* section in the app detail page. Click the *Generate* button and you will see a *Consumer API keys* and *Access token & access token secret* sections, each with two values (keys/tokens and coressponding secrets).
+c. After you have created your app got to the *Keys and Tokens* section in the app detail page. Click the *Generate* button and you will see a *Consumer API keys* and *Access token & access token secret* sections, each with two values (keys/tokens and coressponding secrets).
 
-On your local machine, create a *.tweemacs* file in your home directory (*~/*) and enter the information generated above in the follwing format/order:
+d. On your local machine, create a *.tweemacs* file in your home directory (*~/*) and enter the information generated above in the follwing format/order:
 
 
 ```Text
