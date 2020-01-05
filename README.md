@@ -1,6 +1,6 @@
 # Tweemacs
 
-Tweemacs is an Elisp extension for the [Emacs](https://www.gnu.org/software/emacs/) text editor that enables a user to Tweeting the contents of a given buffer.
+Tweemacs is an Elisp extension for the [Emacs](https://www.gnu.org/software/emacs/) text editor that enables a user to Tweet the contents of a given buffer.
 
 ## Installation Instructions
 
