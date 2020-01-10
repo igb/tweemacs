@@ -14,11 +14,11 @@
   "Send a tweet!"
   (interactive)
 
-  (if (<= (buffer-size) 140)
+  (if (<= (buffer-size) 280)
       (send-tweet 
        (buffer-substring-no-properties (point-min) (point-max))
        )
-    (print "MORE THAN 140 CHARS!"))
+    (print "MORE THAN 280 CHARS!"))
    )
   
 (defun keep-output (process output)
