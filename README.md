@@ -49,7 +49,7 @@ Ok, now you are good to go. Just launch or restart Emacs!
 ### Details ###
 1. Open a new buffer or file.
 2. Type or enter the Tweet content into the buffer.
-3. *M-x tweet* will then, if the buffer length is 140 characters or less, send your Tweet.
+3. *M-x tweet* will then, if the buffer length is 140^H^H^H 280 characters or less, send your Tweet.
 4. Look for the message *"Tweeted!"* to confirm your Tweet was successfully sent.
 5. If an error occurred the error message will be displayed in the Message minibuffer.
 
