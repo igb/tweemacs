@@ -3,12 +3,75 @@
 
 
 (defun read-creds ()
-    "Read auth tokens from local file"
-    (with-temp-buffer
-      (insert-file-contents "~/.tweemacs")
-      (setq raw-creds (split-string (buffer-string) "\n" t))
-      (setq cred-nvps (mapcar (lambda (x) (split-string x "=")) raw-creds))
-      (mapcar (lambda (x) (set (intern (car x)) (car (cdr x)))) cred-nvps)))
+  "Read auth tokens from local file"
+  (if (file-exists-p "~/.tweemacs")
+      (read-creds-from-tweemacs)
+    (if (file-exists-p "~/.twurlrc")
+	(read-creds-from-twurlrc))
+    )
+  )
+
+(defun read-creds-from-tweemacs ()
+  "Read auth tokens from ~/.tweemacs"
+  (with-temp-buffer
+	(insert-file-contents "~/.tweemacs")
+	(setq raw-creds (split-string (buffer-string) "\n" t))
+	(setq cred-nvps (mapcar (lambda (x) (split-string x "=")) raw-creds))
+	(mapcar (lambda (x) (set (intern (car x)) (car (cdr x)))) cred-nvps)))
+
+(defun read-creds-from-twurlrc ()
+  "Read auth tokens from ~/.twurlrc"
+  (with-temp-buffer
+    (insert-file-contents "~/.twurlrc")
+    (setq raw-twurlrc (split-string  (buffer-string) "[\n :]" t))
+    (setq default-twurl-account (get-default-twurl-account-identifier raw-twurlrc))
+    (print (concat "default: " default-twurl-account))
+    (set-twurl-creds default-twurl-account raw-twurlrc)))
+
+
+(defun get-default-twurl-account-identifier (raw-twurlc)
+  "Get default account credential set identifier."
+  (if (string= "default_profile" (car raw-twurlc))
+      (car (cdr (cdr (cdr (cdr raw-twurlc)))))
+    (get-default-twurl-account-identifier (cdr raw-twurlc))))
+
+
+
+(defun set-twurl-creds (account-identifier raw-twurlrc)
+  "Extract credentials for the given account identifier."
+  (print (car raw-twurlrc))
+  (if
+      (not (null raw-twurlrc))
+      (if (string= account-identifier (car raw-twurlrc))
+	  (set-twurl-creds-by-name (cdr raw-twurlrc))
+	(set-twurl-creds account-identifier (cdr raw-twurlrc)))
+	))
+	
+(defun set-twurl-creds-by-name (twurlrc)
+  (print "in creds by name")
+  (print (car twurlrc))
+  (if
+      (not (null twurlrc))
+      
+      (cond
+       ((string= (car twurlrc) "consumer_key") (set-twurl-credential-value 'API_KEY twurlrc))
+       ((string= (car twurlrc) "consumer_secret") (set-twurl-credential-value 'API_SECRET twurlrc))
+       ((string= (car twurlrc) "secret") (set-twurl-credential-value 'ACCESS_TOKEN_SECRET twurlrc))
+       ((string= (car twurlrc) "token") (set-twurl-credential-value 'ACCESS_TOKEN twurlrc))
+;;       ((string= (car twurlrc) "username") t)
+       (t  (set-twurl-creds-by-name (cdr twurlrc))))
+
+    (set-twurl-creds-by-name (cdr twurlrc))))
+
+(defun set-twurl-credential-value(cred twurlrc)
+  (set cred (car (cdr twurlrc)))
+  (set-twurl-creds-by-name (cdr twurlrc))
+  )
+  
+  
+	  
+    
+
 
 (defun tweet ()
   "Send a tweet!"
@@ -56,7 +119,8 @@
 (defun send-tweet (tweet-body)
   
   (read-creds)
-  
+
+  (print-creds)
   (setq escaped-tweet (escape-uri tweet-body))
   (setq status (concat "status=" escaped-tweet))
 
@@ -82,6 +146,11 @@
   (url-hexify-string x))
 
 
+(defun print-creds ()
+  (print API_KEY)
+  (print API_SECRET)
+  (print ACCESS_TOKEN)
+  (print ACCESS_TOKEN_SECRET))
 
 (defun encode-parameters (parameters)
   (mapcar
