@@ -12,6 +12,13 @@ Tweemacs is an Elisp extension for the [Emacs](https://www.gnu.org/software/emac
 ```
 Note that you do not need the ".el" filename extension in the path, just the path of the local directory in which the downloaded file resides followed by the string "tweemacs".
 
+Or just add the following line:
+```Elisp
+(condition-case e
+    (save-window-excursion (eval-buffer (browse-url-emacs "https://raw.githubusercontent.com/igb/tweemacs/master/tweemacs.el")))
+  (error (message "Could not load tweemacs remote library: %s" (cadr e))))
+```
+
 If you do not have a *.emacs* in your home directory go ahead and create an empty file and add the line described above.
 
 ```Shell
